@@ -1,0 +1,102 @@
+services:
+  api: &api
+    container_name: api
+    image: scale-test-api
+    init: true
+    tty: true
+    stdin_open: true
+
+    restart: always
+    
+    build: .
+
+    depends_on:
+      - mongo
+    
+    environment:
+      NODE_ENV: development
+
+    env_file:
+      - ./.env
+
+    volumes:
+      - ./api:/home/node/code
+
+    networks:
+      - api-mongo
+      - api-rabbit
+      
+    ports:
+      - 3000:3000
+
+    # entrypoint: "/home/node/code/node_modules/.bin/nodemon server.js"
+    # entrypoint: "pm2-runtime server.js -i 1 --watch"
+    entrypoint: "pm2-dev server.js -i 1"
+
+    deploy:
+      resources:
+          limits:
+            cpus: 0.50
+            memory: 512M
+          reservations:
+            cpus: 0.25
+            memory: 128M
+
+  queue: 
+    <<: *api
+    container_name: queue-api
+
+    depends_on:
+      - api
+      - rabbitmq
+    
+    volumes:
+      - ./queue-api:/home/node/code
+
+    networks:
+      - rabbit-queue
+      
+    ports:
+      - 5000:5000
+
+    # entrypoint: "/home/node/code/node_modules/.bin/nodemon server.js"
+    # entrypoint: "pm2-runtime server.js -i 1 --watch"
+
+  mongo:
+    container_name: mongo
+    restart: always
+    image: mongo:4.2.0 
+
+    volumes:
+      - ./data:/data/db
+      - ./scripts:/docker-entrypoint-initdb.d
+
+    networks:
+      - api-mongo
+    
+    ports:
+      - 27017:27017
+    
+    # # command: ["--replSet", "rs0"]
+    command: [ "--bind_ip_all", "--replSet", "rs0" ]
+
+  rabbitmq:
+    container_name: rabbitmq
+    restart: always
+    image: rabbitmq:3.9.12-management-alpine
+
+    ports:
+      - 15672:15672
+    
+    networks:
+      - rabbit-queue
+      - api-rabbit
+
+
+networks:
+  api-mongo:
+  api-queue:
+  rabbit-queue:
+  api-rabbit:
+
+  
