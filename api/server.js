@@ -3,8 +3,8 @@ const helmet = require('helmet');
 const mongoose = require('mongoose');
 const amqp = require('amqplib');
 
-const { getData, saveData } = require('./controllers/testData.controller');
-const { generateNewUrl, getOrignalUrl } = require('./controllers/urlShortner.controller');
+const { getData, saveData, saveDataToDB } = require('./controllers/testData.controller');
+// const { generateNewUrl, getOrignalUrl } = require('./controllers/urlShortner.controller');
 
 const app = express();
 
@@ -48,9 +48,18 @@ const startConnection = async () => {
         channel.consume(QUEUE, async data => {
 
             // delay
-            for (i=0; i< 1000000000; ++i);
-            console.log("🚀 ~ Received data", Buffer.from(data.content).toString())
-            channel.ack(data);
+            // for (i=0; i< 1000000000; ++i);
+            const dataString = Buffer.from(data.content).toString()
+            console.log("🚀 ~ Received data", dataString)
+            const jsonData = JSON.parse(dataString);
+            await saveDataToDB(jsonData)
+                .then(result => {
+                    console.log('Data written', result);
+                    channel.ack(data);
+                })
+                .catch(error => {
+                    console.error('Data Write failed!', error.message);
+                })
         })
 
         process.on('close-db', async () => {

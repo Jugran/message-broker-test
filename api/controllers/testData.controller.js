@@ -2,11 +2,13 @@
 const { testData, Income } = require('../models/testData')
 
 
-exports.saveData = async (req, res) => {
+
+const saveDataToDB = async (dataObject) => {
+    const { name, phone, income, company } = dataObject;
+
     const session = await testData.startSession();
 
     try {
-        const { name, phone, income, company } = req.body;
 
         session.startTransaction();
 
@@ -25,16 +27,30 @@ exports.saveData = async (req, res) => {
 
         await session.commitTransaction();
         session.endSession();
-        console.log("🚀 data saved")
-        return res.status(201).send({ message: "data saved" })
 
+        return { "Data": dataObject }
     }
     catch (error) {
         console.error('Error occured while saving data', error.message, error.stack);
-
         await session.abortTransaction();
         session.endSession();
-        return res.status(500).send({ error: "cannot save data" })
+
+        throw new Error("Error saving data to Database");
+    }
+}
+
+exports.saveData = async (req, res) => {
+    try {
+        const { name, phone, income, company } = req.body;
+
+        await saveDataToDB({ name, phone, income, company })
+
+        console.log("🚀 data saved")
+        return res.status(201).send({ message: "data saved" })
+    }
+    catch (error) {
+        console.error(error.message);
+        return res.status(500).send({ error: error.message })
     }
 }
 
@@ -53,3 +69,5 @@ exports.getData = async (req, res) => {
         return res.status(500).send({ error: "cannot retrieve data" })
     }
 }
+
+exports.saveDataToDB = saveDataToDB;

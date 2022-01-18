@@ -80,6 +80,15 @@ services:
     # # command: ["--replSet", "rs0"]
     command: [ "--bind_ip_all", "--replSet", "rs0" ]
 
+    # deploy:
+    #   resources:
+    #       limits:
+    #         cpus: 0.20
+    #         memory: 256M
+    #       reservations:
+    #         cpus: 0.15
+    #         memory: 128M
+    
   rabbitmq:
     container_name: rabbitmq
     restart: always
@@ -91,7 +100,6 @@ services:
     networks:
       - rabbit-queue
       - api-rabbit
-
 
 networks:
   api-mongo:
