@@ -50,6 +50,11 @@ app.post('/echo', (req, res) => {
     return res.status(200).send({ "echo": req.body ?? {} })
 })
 
+app.get('/hello', (req, res) => {
+    console.log("Hello!")
+    return res.status(200).send({ "echo": "hello there" })
+})
+
 // app.post('/getData', getData);
 app.post('/queueData', async (req, res) => {
     const data = req.body ?? {};

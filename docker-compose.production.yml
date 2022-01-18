@@ -13,9 +13,6 @@ services:
     depends_on:
       - mongo
       - rabbitmq
-    
-    environment:
-      NODE_ENV: development
 
     env_file:
       - ./.env
@@ -27,21 +24,8 @@ services:
       - api-mongo
       - api-rabbit
       
-    ports:
-      - 3000:3000
-
     # entrypoint: "/home/node/code/node_modules/.bin/nodemon server.js"
-    # entrypoint: "pm2-runtime server.js -i 1 --watch"
-    entrypoint: "pm2-dev server.js -i 1"
-
-    deploy:
-      resources:
-          limits:
-            cpus: 0.50
-            memory: 512M
-          reservations:
-            cpus: 0.25
-            memory: 128M
+    entrypoint: "pm2-runtime server.js -i 1 --watch"
 
   queue: 
     <<: *api
@@ -56,9 +40,7 @@ services:
 
     networks:
       - rabbit-queue
-      
-    ports:
-      - 5000:5000
+      - app-network
 
     # entrypoint: "/home/node/code/node_modules/.bin/nodemon server.js"
     # entrypoint: "pm2-runtime server.js -i 1 --watch"
@@ -74,10 +56,7 @@ services:
 
     networks:
       - api-mongo
-    
-    ports:
-      - 27017:27017
-    
+        
     # # command: ["--replSet", "rs0"]
     command: [ "--bind_ip_all", "--replSet", "rs0" ]
 
@@ -102,9 +81,42 @@ services:
       - rabbit-queue
       - api-rabbit
 
+  webserver:
+    image: nginx:mainline-alpine
+    container_name: webserver
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./web-root:/var/www/html
+      - ./nginx:/etc/nginx/conf.d
+      - ./certbot/etc:/etc/letsencrypt
+      - ./certbot/var:/var/lib/letsencrypt
+      - ./dhparam:/etc/ssl/certs
+
+    depends_on:
+      - queue
+    networks:
+      - app-network
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - ./certbot/etc:/etc/letsencrypt
+      - ./certbot/var:/var/lib/letsencrypt
+      - ./web-root:/var/www/html  
+    depends_on:
+      - webserver
+    command: certonly --webroot --webroot-path=/var/www/html --email email@email.com --agree-tos --no-eff-email -d example.com --force-renewal
+ 
+# https://www.digitalocean.com/community/tutorials/how-to-secure-a-containerized-node-js-application-with-nginx-let-s-encrypt-and-docker-compose
+
 networks:
   api-mongo:
   rabbit-queue:
   api-rabbit:
+  app-network:
 
   
