@@ -13,6 +13,17 @@ Checklist:
 
 ---
 
+
+
+### To Start Selected services
 ```
-docker-compose --compatibility up -d && docker-compose logs -f -t api queue 
+docker-compose up -d api queue webserver
+```
+
+### To refresh SSl certificate
+```
+docker-compose up --force-recreate --no-deps certbot
+
+docker-compose up -d --force-recreate --no-deps webserver
+
 ```
