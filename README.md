@@ -23,7 +23,15 @@ docker-compose up -d api queue webserver
 ### To refresh SSl certificate
 ```
 docker-compose up --force-recreate --no-deps certbot
+```
 
+### To reload Nginx config
+Hard restart whole container
+```
 docker-compose up -d --force-recreate --no-deps webserver
+```
 
+Reload config inside container
+```
+docker exec -it {container_name} nginx -s reload
 ```
